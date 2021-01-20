@@ -6,6 +6,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const history = require('connect-history-api-fallback');//重整瀏覽器時，避免產生404的問題
+const { setInterval, clearInterval, setTimeout } = require('timers');
 
 //const indexRouter = require('./routes/index');
 //const usersRouter = require('./routes/users');
@@ -38,43 +39,69 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // johnny-five event when johnny init ready
 board.on('ready', function() {
-  // 指定LED output 為 Arduino 第6,5,3腳
-  const leds = new Leds([6,5,3]);
-  // led init
-  //leds.off();
-  // socket連線成功時，開始偵聽前端的 redLightt 事件
+  
+  const leds = new Leds([6,5,3]);  // 指定LED output 為 Arduino 第6,5,3腳
+  // socket連線成功時，開始監聽前端的 ledOffEvent、ledOnEvent 事件
   sio.on('connection', function(socket) {
-    socket.on('ledLight', function(data) {
-      //如果前端有動作則呼叫 johnny-five led.on() 切換led狀態
+    let time = null;
+    socket.on('ledOffEvent', function(data){
       console.log(data);
-      if (data) {
-/*           const rLed = leds[0].on();
-          const yLed = leds[1].on();
-          const gLed = leds[2].on();
-          triggerAllLed(rLed, yLed, gLed); */
-          leds[0].on();
-          if(leds[0]){
-              setTimeout(() => {
-                  leds[0].off();
-                  leds[1].on();
-                  if(leds[1]){
-                      setTimeout(() => {
-                        leds[1].off();
-                        leds[2].on();
-                        if(leds[2]){
-                            setTimeout(() => {
-                                leds[2].off();
-                            },500)
-                            data = false;
-                        }
-                      },500)
-                  }
-              },500)
-          }
-      }
-        });
+      leds.off();
+      clearTimeout(time);//清除計時器(沒有清除的話他會只關閉完當下那顆亮的LED之後又繼續執行)
     });
-});
+    socket.on('ledOnEvent', function(data) {
+      ledLoopOn(data);
+      console.log(data);
+        function ledAsync (i,duration){
+          return new Promise((res) => {//Promise(ES6語法)
+             time = setTimeout(()=>{
+                console.log(i);
+                leds[i].off();
+                res(`${i}亮`);//await有接收到resolve()才會繼續往下一個await setPin()執行
+            } ,duration)
+          });
+        }
+        async function setPin(i,duration){//當函式前面寫上async，裡面就可以使用await的同步語法
+          leds[i].on();
+          await ledAsync(i,duration,data);
+        }
+        async function ledLoopOn(data){//async搭配await(ES7語法=>不支援IE瀏覽器)
+            while(true){
+              await setPin(0,10000);//同步執行，會等待上一個LED執行完才繼續換下一個LED
+              await setPin(1,1500);
+              await setPin(2,10000);
+              await setPin(1,1500);
+            }
+          }
+        });
+      });
+    });
+/*         function ledLoopOn(data){
+          if(!data){callback hell(回呼地獄=>不易閱讀，擴充性不佳，要一直寫重複的片段)
+            return;
+          }else{
+          leds[0].on();
+          if(leds[0] && data){
+            let timeoutA = setTimeout(() => {
+              leds[0].off();
+              leds[1].on();
+              if(leds[1] && data){
+                let timeoutB = setTimeout(() => {
+                  leds[1].off();
+                  leds[2].on();
+                  if(leds[2] && data){
+                    let timeoutC = setTimeout(() => {
+                      leds[2].off();
+                      clearTimeout(timeoutA,timeoutB,timeoutC);
+                      ledLoopOn(data);
+                    },10000)
+                  }
+                },1500)
+              }
+            },10000)
+          }
+        }
+      } */
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
