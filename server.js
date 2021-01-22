@@ -55,10 +55,11 @@ admin.initializeApp({
 });
 
 const fireData = admin.database();
-const PORT = process.env.PORT || '3000';
+const port = process.env.PORT || '3000';
+app.set("port", port);
 
 
-const server = app.listen(PORT, function() {
+const server = app.listen(port, function() {
   console.log('connected!');
 });
 const sio = io(server);
