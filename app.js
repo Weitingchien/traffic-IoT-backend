@@ -11,7 +11,7 @@ const session = require("express-session");
 const { Board, Leds } = require("johnny-five");
 const history = require("connect-history-api-fallback");//重整瀏覽器時，避免產生404的問題
 const { setInterval, clearInterval, setTimeout } = require("timers");
-const serviceAccount = require("./test01-4f7aa-firebase-adminsdk-zu5f7-dfb6edf5a2.json");
+//const serviceAccount = require("./test01-4f7aa-firebase-adminsdk-zu5f7-dfb6edf5a2.json");
 const app = express();
 //app.use(cookieParser());
 app.use(session({//session對使用者發號碼牌，並對其內容加密
@@ -34,7 +34,18 @@ app.use(cors(corsOptions)); // 要在 API 的上面先使用
 
 //連接Firebase帳戶與資料庫
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert({
+    "type": process.env.FIREBASE_TYPE,
+    "project_id": process.env.FIREBASE_PROJECT_ID,
+    "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
+    "private_key": process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    "client_email": process.env.FIREBASE_CLIENT_EMAIL,
+    "client_id": process.env.FIREBASE_CLIENT_ID,
+    "auth_uri": process.env.FIREBASE_AUTH_URI,
+    "token_uri": process.env.FIREBASE_TOKEN_URI,
+    "auth_provider_x509_cert_url": process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
+    "client_x509_cert_url": process.env.FIREBASE_CLIENT_X509_CERT_URL
+  }),
   databaseURL: `${process.env.databaseURL}`
 });
 
