@@ -63,7 +63,7 @@ const server = app.listen(port, function() {
   console.log('connected!');
 });
 const sio = io(server);
-io.set('transports', ['websocket']);
+sio.set('transports', ['websocket']);
 const board = new Board({
   port: 'COM4',
 });
