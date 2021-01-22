@@ -5,6 +5,7 @@ const io = require("socket.io");
 const logger = require("morgan");
 const express = require("express");
 const admin = require("firebase-admin");
+const serveStatic = require('serve-static');
 const createError = require("http-errors");
 const session = require("express-session");
 const MemoryStore = require('memorystore')(session)
@@ -74,8 +75,11 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 //app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'dist')));//靜態檔案
-
+//app.use(express.static(path.join(__dirname, 'dist')));//靜態檔案
+app.use('/', serveStatic(path.join(__dirname, '/dist')));//靜態檔案
+app.get(/.*/, function (req, res) {
+  res.sendFile(path.join(__dirname, '/dist/index.html'));
+});
 
 
 app.post('/Login', function(req, res){
