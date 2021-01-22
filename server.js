@@ -5,7 +5,7 @@ const io = require("socket.io");
 const logger = require("morgan");
 const express = require("express");
 const admin = require("firebase-admin");
-const serveStatic = require('serve-static');
+//const serveStatic = require('serve-static');
 const createError = require("http-errors");
 const session = require("express-session");
 const MemoryStore = require('memorystore')(session)
@@ -63,6 +63,7 @@ const server = app.listen(port, function() {
   console.log('connected!');
 });
 const sio = io(server);
+io.set('transports', ['websocket']);
 const board = new Board({
   port: 'COM4',
 });
