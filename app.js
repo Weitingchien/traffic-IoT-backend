@@ -50,7 +50,7 @@ admin.initializeApp({
 });
 
 const fireData = admin.database();
-const PORT = 3000 || process.env.PORT;
+const PORT = process.env.PORT || '3000';
 
 
 const server = app.listen(PORT, function() {
