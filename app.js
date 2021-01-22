@@ -26,7 +26,7 @@ app.use(session({//session對使用者發號碼牌，並對其內容加密
 
 // 加上 credentials 後，origin 必須設置網址，不能為 * (通用)
 const corsOptions = {//因為非同源，所以前後端都必須要加上CORS的Credentials:true
-  origin: 'http://localhost:8080', // 客戶端 port
+  origin: `http://localhost:8080` || `${process.env.SocketIO}`, // 客戶端 port
   credentials: true,
 };
 
@@ -52,7 +52,7 @@ admin.initializeApp({
 const fireData = admin.database();
 
 
-const server = app.listen(3000, function() {
+const server = app.listen(3000||process.env.PORT, function() {
   console.log('connected!');
 });
 const sio = io(server);
