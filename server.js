@@ -56,7 +56,7 @@ admin.initializeApp({
 
 const fireData = admin.database();
 const port = process.env.PORT || '3000';
-app.set("port", port);
+app.set("port", port);//要+這個上傳至heroku才不會出錯
 
 
 const server = app.listen(port, function() {
