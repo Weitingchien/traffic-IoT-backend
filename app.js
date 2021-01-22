@@ -1,18 +1,45 @@
-const io = require('socket.io');
-const express = require('express');
-const createError = require('http-errors');
-const { Board, Leds } = require('johnny-five');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const history = require('connect-history-api-fallback');//重整瀏覽器時，避免產生404的問題
-const { setInterval, clearInterval, setTimeout } = require('timers');
-
-//const indexRouter = require('./routes/index');
-//const usersRouter = require('./routes/users');
-
-
+require('dotenv').config()
+const path = require("path");
+const cors = require('cors');
+const io = require("socket.io");
+const logger = require("morgan");
+const express = require("express");
+const admin = require("firebase-admin");
+const createError = require("http-errors");
+const session = require("express-session");
+//const cookieParser = require("cookie-parser");
+const { Board, Leds } = require("johnny-five");
+const history = require("connect-history-api-fallback");//重整瀏覽器時，避免產生404的問題
+const { setInterval, clearInterval, setTimeout } = require("timers");
+const serviceAccount = require("./test01-4f7aa-firebase-adminsdk-zu5f7-dfb6edf5a2.json");
 const app = express();
+//app.use(cookieParser());
+app.use(session({//session對使用者發號碼牌，並對其內容加密
+  secret: 'keyboard cat',//加密
+  resave: false,
+  saveUninitialized: true,
+  cookie: {
+     httpOnly: true,
+     maxAge: 10*600 
+  }//10分鐘
+}))
+
+// 加上 credentials 後，origin 必須設置網址，不能為 * (通用)
+const corsOptions = {//因為非同源，所以前後端都必須要加上CORS的Credentials:true
+  origin: 'http://localhost:8080', // 客戶端 port
+  credentials: true,
+};
+
+app.use(cors(corsOptions)); // 要在 API 的上面先使用
+
+//連接Firebase帳戶與資料庫
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: `${process.env.databaseURL}`
+});
+
+const fireData = admin.database();
+
 
 const server = app.listen(3000, function() {
   console.log('connected!');
@@ -28,18 +55,37 @@ app.use(history());//單頁面應用的History路由模式
 //app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
-//app.use(express.json());
-//app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 //app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'dist')));//靜態檔案
+
+
+
+app.post('/Login', function(req, res){
+  //req.session.user = req.body.email;
+  fireData.ref('administrator').once('value', function(snapshot){
+    let administratorEmail = snapshot.val().email;//取得firebase管理員email的值
+    let administratorpwd = snapshot.val().pwd;
+    if (req.body.email === administratorEmail && req.body.pwd === administratorpwd ){//如果使用者輸入的email與密碼與firebase資料庫裡面的資料一樣
+      res.send({//回傳token=>經過session加密，還有result=>值是一個物件裡面有email與pwd
+        token: req.session.user,
+        result: snapshot.val(),
+        success: true
+      })
+    }
+  });
+/*   res.send({
+    token: req.session.user,
+  }) */
+})
 
 //app.use('/', indexRouter);
 //app.use('/users', usersRouter);
 
 // johnny-five event when johnny init ready
 board.on('ready', function() {
-  
+
   const leds = new Leds([6,5,3]);  // 指定LED output 為 Arduino 第6,5,3腳
   // socket連線成功時，開始監聽前端的 ledOffEvent、ledOnEvent 事件
   sio.on('connection', function(socket) {
@@ -77,7 +123,7 @@ board.on('ready', function() {
       });
     });
 /*         function ledLoopOn(data){
-          if(!data){callback hell(回呼地獄=>不易閱讀，擴充性不佳，要一直寫重複的片段)
+          if(!data){//callback hell(回呼地獄=>不易閱讀，擴充性不佳，要一直寫重複的片段)
             return;
           }else{
           leds[0].on();
@@ -102,6 +148,9 @@ board.on('ready', function() {
           }
         }
       } */
+
+
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
