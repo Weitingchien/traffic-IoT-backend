@@ -76,7 +76,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 //app.use(express.static(path.join(__dirname, 'public')));
 //app.use(express.static(path.join(__dirname, 'dist')));//靜態檔案
-app.use('/', serveStatic(path.join(__dirname, '/dist')));//靜態檔案
+app.use(express.static(path.join(__dirname, '/dist')));//靜態檔案
 app.get(/.*/, function (req, res) {
   res.sendFile(path.join(__dirname, '/dist/index.html'));
 });
