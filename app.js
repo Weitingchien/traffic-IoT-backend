@@ -7,6 +7,7 @@ const express = require("express");
 const admin = require("firebase-admin");
 const createError = require("http-errors");
 const session = require("express-session");
+const MemoryStore = require('memorystore')(session)
 //const cookieParser = require("cookie-parser");
 const { Board, Leds } = require("johnny-five");
 const history = require("connect-history-api-fallback");//重整瀏覽器時，避免產生404的問題
@@ -20,8 +21,11 @@ app.use(session({//session對使用者發號碼牌，並對其內容加密
   saveUninitialized: true,
   cookie: {
      httpOnly: true,
-     maxAge: 10*600 
-  }//10分鐘
+     maxAge: 600000
+  },//10分鐘
+  store: new MemoryStore({
+    checkPeriod: 600000
+  }),
 }))
 
 // 加上 credentials 後，origin 必須設置網址，不能為 * (通用)
