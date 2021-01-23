@@ -1,11 +1,9 @@
 require('dotenv').config()
 const path = require("path");
 const cors = require('cors');
+const io = require("socket.io");
 const logger = require("morgan");
 const express = require("express");
-const app = express();
-var http = require('http').Server(app);
-const io = require("socket.io")(http);
 const admin = require("firebase-admin");
 const createError = require("http-errors");
 const session = require("express-session");
@@ -15,7 +13,7 @@ const { Board, Leds } = require("johnny-five");
 const history = require("connect-history-api-fallback");//重整瀏覽器時，避免產生404的問題
 const { setInterval, clearInterval, setTimeout } = require("timers");
 //const serviceAccount = require("./test01-4f7aa-firebase-adminsdk-zu5f7-dfb6edf5a2.json");
-
+const app = express();
 //app.use(cookieParser());
 app.use(session({//session對使用者發號碼牌，並對其內容加密
   secret: 'keyboard cat',//加密
@@ -60,13 +58,10 @@ const port = process.env.PORT || '3000';
 app.set("port", port);//要+這個上傳至heroku才不會出錯
 
 
-/* const server = app.listen(port, function() {
-  console.log('connected!');
-}); */
-//const sio = io(server);
-http.listen(port, function() {
+const server = app.listen(port, function() {
   console.log('connected!');
 });
+const sio = io(server);
 const board = new Board({
   port: 'COM4',
 });
@@ -113,7 +108,7 @@ board.on('ready', function() {
 
   const leds = new Leds([6,5,3]);  // 指定LED output 為 Arduino 第6,5,3腳
   // socket連線成功時，開始監聽前端的 ledOffEvent、ledOnEvent 事件
-  io.on('connection', function(socket) {
+  sio.on('connection', function(socket) {
     let time = null;
     socket.on('ledOffEvent', function(data){
       console.log(data);
