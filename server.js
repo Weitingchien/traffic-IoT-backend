@@ -1,6 +1,7 @@
 require('dotenv').config()
 const path = require("path");
 const cors = require('cors');
+const io = require("socket.io");
 const logger = require("morgan");
 const express = require("express");
 const admin = require("firebase-admin");
@@ -13,8 +14,6 @@ const history = require("connect-history-api-fallback");//重整瀏覽器時，�
 const { setInterval, clearInterval, setTimeout } = require("timers");
 //const serviceAccount = require("./test01-4f7aa-firebase-adminsdk-zu5f7-dfb6edf5a2.json");
 const app = express();
-const http = require('http').Server(app);
-const io = require("socket.io")(http);
 //app.use(cookieParser());
 app.use(session({//session對使用者發號碼牌，並對其內容加密
   secret: 'keyboard cat',//加密
