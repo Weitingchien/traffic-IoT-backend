@@ -62,7 +62,7 @@ app.set("port", port);//要+這個上傳至heroku才不會出錯
 const server = app.listen(port, function() {
   console.log('connected!');
 });
-//const sio = io(server);
+const sio = io(server);
 const board = new Board({
   port: 'COM4',
 });
@@ -109,7 +109,7 @@ board.on('ready', function() {
 
   const leds = new Leds([6,5,3]);  // 指定LED output 為 Arduino 第6,5,3腳
   // socket連線成功時，開始監聽前端的 ledOffEvent、ledOnEvent 事件
-  io.on('connection', function(socket) {
+  sio.on('connection', function(socket) {
     let time = null;
     socket.on('ledOffEvent', function(data){
       console.log(data);
