@@ -36,98 +36,120 @@ const board = new Board({
   port: 'COM4'
 });
 
-let numberOfCars = 0;
-
 // johnny-five event when johnny init ready
 board.on('ready', function() {
   sio.on('connection', function(socket) {
-    const leds = new Leds([4, 3, 2]); // 指定LED output 為 Arduino 第4,3,2腳
+    let numberOfCars = 0;
+    let addTrafficSignalLightsSeconds;
+    const leds = new Leds([4, 3, 2, 7, 6, 5]); // 指定LED output 為 Arduino 第4,3,2,7,6,5腳
     // Create a new `fsr` hardware instance.
-    const fsr = new Sensor.Digital(12);
-    fsr.on('change', () => {
+    const fsrA = new Sensor.Digital({
+      pin: 12,
+      freq: 25
+    });
+    const fsrB = new Sensor.Digital({
+      pin: 13,
+      freq: 25
+    });
+    fsrA.on('change', () => {
       let time;
       // 值addTrafficSignalLightsSeconds為1代表有車子通過
-      if (fsr.value === 1) {
+      if (fsrA.value === 1) {
         numberOfCars += 1;
-        //fsr.addTrafficSignalLightsSeconds = 1;
-        if (numberOfCars === 1) {
-          fsr.addTrafficSignalLightsSeconds = 1; //10秒內有1輛車子通過值就為1
-          socket.emit(
-            'ForceSensitiveResistorEvent',
-            fsr.addTrafficSignalLightsSeconds
-          );
-          console.log(fsr.addTrafficSignalLightsSeconds);
-        } else if (numberOfCars >= 2) {
-          fsr.addTrafficSignalLightsSeconds = 2; //10秒內有2輛車子通過值就為2
+        //fsrA.addTrafficSignalLightsSeconds = 1;
+        if (numberOfCars >= 1 && numberOfCars <= 3) {
+          fsrA.addTrafficSignalLightsSeconds = 1; //1輛且小於等於3輛車子通過值就為1
           socket.emit('ForceSensitiveResistorEvent', numberOfCars);
-        } else {
-          fsr.addTrafficSignalLightsSeconds = 0;
-          socket.emit(
-            'ForceSensitiveResistorEvent',
-            fsr.addTrafficSignalLightsSeconds
-          );
+          console.log(fsrA.addTrafficSignalLightsSeconds);
+        } else if (numberOfCars > 4) {
+          fsrA.addTrafficSignalLightsSeconds = 2; //有4輛以上車子通過值就為2
+          socket.emit('ForceSensitiveResistorEvent', numberOfCars);
         }
         time = setTimeout(() => {
-          //40秒後沒有任何車子經過就重置
-          fsr.addTrafficSignalLightsSeconds = 0;
+          //90秒後沒有任何車子經過就重置
+          fsrA.addTrafficSignalLightsSeconds = 0;
+          numberOfCars = 0;
           socket.emit(
             'ForceSensitiveResistorEvent',
-            fsr.addTrafficSignalLightsSeconds
+            numberOfCars
           );
-          numberOfCars = 0;
           clearTimeout(time);
-        }, 40000);
+        }, 90000);
       }
-      //console.log(fsr.value);
+    });
+    fsrB.on('change', () => {
+      let time;
+      // 值addTrafficSignalLightsSeconds為1代表有車子通過
+      if (fsrB.value === 1) {
+        numberOfCars += 1;
+        //fsrB.addTrafficSignalLightsSeconds = 1;
+        if (numberOfCars >= 1 && numberOfCars <= 3) {
+          fsrB.addTrafficSignalLightsSeconds = 1;
+          socket.emit('ForceSensitiveResistorEvent', numberOfCars);
+          console.log(fsrB.addTrafficSignalLightsSeconds);
+        } else if (numberOfCars >= 4) {
+          fsrB.addTrafficSignalLightsSeconds = 2;
+          socket.emit('ForceSensitiveResistorEvent', numberOfCars);
+        }
+        time = setTimeout(() => {
+          fsrB.addTrafficSignalLightsSeconds = 0;
+          numberOfCars = 0;
+          socket.emit(
+            'ForceSensitiveResistorEvent',
+            numberOfCars
+          );
+          clearTimeout(time);
+        }, 90000);
+      }
     });
 
     // socket連線成功時，開始監聽前端的 ledOffEvent、ledOnEvent 事件
     //sio.on('connection', function(socket) {
-    let time = null;
-    socket.on('ledOffEvent', function(data) {
-      console.log(data);
+    socket.on('ledOffEvent', function() {
       leds.off();
       clearTimeout(time); //清除計時器(沒有清除的話他會只關閉完當下那顆亮的LED之後又繼續執行)
     });
-    socket.on('ledOnEvent', function(data) {
-      ledLoopOn();
-      console.log(data);
-      function ledAsync(i, duration) {
-        return new Promise(res => {
-          //Promise(ES6語法)
-          time = setTimeout(() => {
-            console.log(i);
-            console.log(duration);
-            leds[i].off();
-            res(`${i}亮`); //await有接收到resolve()才會繼續往下一個await setPin()執行
-          }, duration);
-        });
-      }
-      async function setPin(i, duration) {
-        //當函式前面寫上async，裡面就可以使用await的同步語法
-        leds[i].on();
-        await ledAsync(i, duration, data);
-      }
+    socket.on('ledOnEvent', function() {
       async function ledLoopOn() {
         //async搭配await(ES7語法=>不支援IE瀏覽器)
         while (true) {
-          if (fsr.addTrafficSignalLightsSeconds === 1) {
-            await setPin(0, 20000); //同步執行，會等待上一個LED執行完才繼續換下一個LED
-            await setPin(1, 1500);
-            await setPin(2, 20000);
-            await setPin(1, 1500);
-          } else if (fsr.addTrafficSignalLightsSeconds === 2) {
-            await setPin(0, 40000); //同步執行，會等待上一個LED執行完才繼續換下一個LED
-            await setPin(1, 1500);
-            await setPin(2, 40000);
-            await setPin(1, 1500);
+          if (fsrA.addTrafficSignalLightsSeconds === 1 || fsrB.addTrafficSignalLightsSeconds === 1 ) {
+            await setPin(0, 5, 20000); //同步執行，會等待上一個LED執行完才繼續換下一個LED
+            await setPin(1, 4, 1500);
+            await setPin(2, 3, 20000);
+            await setPin(1, 4, 1500);
+          } else if (fsrA.addTrafficSignalLightsSeconds === 2 || fsrB.addTrafficSignalLightsSeconds === 2 ) {
+            await setPin(0, 5, 30000);
+            await setPin(1, 4, 1500);
+            await setPin(2, 3, 30000);
+            await setPin(1, 4, 1500);
           } else {
-            await setPin(0, 10000); //同步執行，會等待上一個LED執行完才繼續換下一個LED
-            await setPin(1, 1500);
-            await setPin(2, 10000);
-            await setPin(1, 1500);
+            await setPin(0, 5, 10000);
+            await setPin(1, 4, 1500);
+            await setPin(2, 3, 10000);
+            await setPin(1, 4, 1500);
           }
         }
+      }
+      ledLoopOn();
+      function ledAsync(a, b, duration) {
+        let time;
+        return new Promise(res => {
+          //Promise(ES6語法)
+          time = setTimeout(() => {
+            console.log(a,b);
+            console.log(duration);
+            leds[a].off();
+            leds[b].off();
+            res(`${a}亮、${b}亮`); //await有接收到resolve()才會繼續往下一個await setPin()執行
+          }, duration);
+        });
+      }
+      async function setPin(a, b, duration) {
+        //當函式前面寫上async，裡面就可以使用await的同步語法
+        leds[a].on();
+        leds[b].on();
+        await ledAsync(a, b, duration);
       }
     });
   });
