@@ -1,5 +1,4 @@
 const dotenv = require('dotenv');
-const admin = require('firebase-admin');
 const io = require('socket.io');
 const createError = require('http-errors');
 const { Board, Leds, Sensor } = require('johnny-five');
@@ -7,24 +6,6 @@ const { Board, Leds, Sensor } = require('johnny-five');
 
 dotenv.config({ path: `config.env` });
 const app = require('./app');
-
-//連接Firebase帳戶與資料庫
-admin.initializeApp({
-  credential: admin.credential.cert({
-    type: process.env.FIREBASE_TYPE,
-    project_id: process.env.FIREBASE_PROJECT_ID,
-    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    client_id: process.env.FIREBASE_CLIENT_ID,
-    auth_uri: process.env.FIREBASE_AUTH_URI,
-    token_uri: process.env.FIREBASE_TOKEN_URI,
-    auth_provider_x509_cert_url:
-      process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-    client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL
-  }),
-  databaseURL: `${process.env.databaseURL}`
-});
 
 const port = process.env.PORT || '3000';
 
@@ -39,8 +20,8 @@ const board = new Board({
 // johnny-five event when johnny init ready
 board.on('ready', function() {
   sio.on('connection', function(socket) {
+    let ledTimer;
     let numberOfCars = 0;
-    let addTrafficSignalLightsSeconds;
     const leds = new Leds([4, 3, 2, 7, 6, 5]); // 指定LED output 為 Arduino 第4,3,2,7,6,5腳
     // Create a new `fsr` hardware instance.
     const fsrA = new Sensor.Digital({
@@ -69,10 +50,7 @@ board.on('ready', function() {
           //90秒後沒有任何車子經過就重置
           fsrA.addTrafficSignalLightsSeconds = 0;
           numberOfCars = 0;
-          socket.emit(
-            'ForceSensitiveResistorEvent',
-            numberOfCars
-          );
+          socket.emit('ForceSensitiveResistorEvent', numberOfCars);
           clearTimeout(time);
         }, 90000);
       }
@@ -94,10 +72,7 @@ board.on('ready', function() {
         time = setTimeout(() => {
           fsrB.addTrafficSignalLightsSeconds = 0;
           numberOfCars = 0;
-          socket.emit(
-            'ForceSensitiveResistorEvent',
-            numberOfCars
-          );
+          socket.emit('ForceSensitiveResistorEvent', numberOfCars);
           clearTimeout(time);
         }, 90000);
       }
@@ -107,18 +82,24 @@ board.on('ready', function() {
     //sio.on('connection', function(socket) {
     socket.on('ledOffEvent', function() {
       leds.off();
-      clearTimeout(time); //清除計時器(沒有清除的話他會只關閉完當下那顆亮的LED之後又繼續執行)
+      clearTimeout(ledTimer); //清除計時器(沒有清除的話他會只關閉完當下那顆亮的LED之後又繼續執行)
     });
     socket.on('ledOnEvent', function() {
       async function ledLoopOn() {
         //async搭配await(ES7語法=>不支援IE瀏覽器)
         while (true) {
-          if (fsrA.addTrafficSignalLightsSeconds === 1 || fsrB.addTrafficSignalLightsSeconds === 1 ) {
+          if (
+            fsrA.addTrafficSignalLightsSeconds === 1 ||
+            fsrB.addTrafficSignalLightsSeconds === 1
+          ) {
             await setPin(0, 5, 20000); //同步執行，會等待上一個LED執行完才繼續換下一個LED
             await setPin(1, 4, 1500);
             await setPin(2, 3, 20000);
             await setPin(1, 4, 1500);
-          } else if (fsrA.addTrafficSignalLightsSeconds === 2 || fsrB.addTrafficSignalLightsSeconds === 2 ) {
+          } else if (
+            fsrA.addTrafficSignalLightsSeconds === 2 ||
+            fsrB.addTrafficSignalLightsSeconds === 2
+          ) {
             await setPin(0, 5, 30000);
             await setPin(1, 4, 1500);
             await setPin(2, 3, 30000);
@@ -133,11 +114,10 @@ board.on('ready', function() {
       }
       ledLoopOn();
       function ledAsync(a, b, duration) {
-        let time;
         return new Promise(res => {
           //Promise(ES6語法)
-          time = setTimeout(() => {
-            console.log(a,b);
+          ledTimer = setTimeout(() => {
+            console.log(a, b);
             console.log(duration);
             leds[a].off();
             leds[b].off();

@@ -1,22 +1,58 @@
-const admin = require('firebase-admin');
+const firebase = require('../service/firebase_connect'); //載入認證模組
+const firebaseDB = require('../service/firebase_adminConnect');
+//載入資料庫模組
+const fireAuth = firebase.auth();
+
+exports.check = function(req, res, next) {
+  if (req.session.uid) {
+    res.status(200).json({
+      status: 'success',
+      success: true
+    });
+  }
+};
 
 exports.login = function(req, res) {
-  const fireData = admin.database();
-  fireData.ref('administrator').once('value', function(snapshot) {
-    const administratorEmail = snapshot.val().email; //取得firebase管理員email的值
-    const administratorpwd = snapshot.val().pwd;
-    if (
-      req.body.email === administratorEmail &&
-      req.body.pwd === administratorpwd
-    ) {
-      req.session.user = req.body.email;
-      //如果使用者輸入的email與密碼與firebase資料庫裡面的資料一樣
+  const { email, pwd } = req.body;
+  fireAuth
+    .signInWithEmailAndPassword(email, pwd)
+    .then(userObject => {
+      req.session.uid = userObject.user.uid;
       res.status(200).json({
-        //回傳token=>經過session加密，還有result=>值是一個物件裡面有email與pwd
-        token: req.session.user,
-        result: snapshot.val(),
+        status: 'success',
+        success: true,
+        auth: req.session.uid
+      });
+    })
+    .catch(err => {
+      res.status(401).json({
+        status: 'error',
+        message: err
+      });
+    });
+};
+
+exports.signup = (req, res) => {
+  const { name, email, pwd } = req.body;
+  fireAuth
+    .createUserWithEmailAndPassword(email, pwd)
+    .then(userObject => {
+      const userInfo = {
+        uid: userObject.user.uid,
+        name: name,
+        email: email
+      };
+      firebaseDB.ref(`/user/${userObject.user.uid}`).set(userInfo);
+      res.status(201).json({
+        status: 'success',
         success: true
       });
-    }
-  });
+      res.redirect('/Login');
+    })
+    .catch(err => {
+      console.log(err);
+      //req.flash('error', err.message);
+      //res.renderVue('Signup.vue', { error: req.flash('error') } );
+      //res.redirect('/Signup');
+    });
 };

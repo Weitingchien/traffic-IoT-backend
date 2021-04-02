@@ -30,10 +30,7 @@ app.use(
     secret: 'keyboard cat', //加密
     resave: true, // 是否要每次進入網頁時重新設置 seesion cookie，如果有設置失效，例如 5 分鐘，重新整理後又有 5 分鐘，但是必須要改成 ture 才有效，但是建議改成 tru
     saveUninitialized: true,
-    cookie: {
-      httpOnly: true,
-      maxAge: 5000
-    } //10分鐘
+    cookie: { maxAge: 600 * 1000 } //10分鐘後到期
   })
 );
 app.use(cors(corsOptions)); // 要在 API 的上面先使用
