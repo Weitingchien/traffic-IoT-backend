@@ -35,7 +35,7 @@ app.use(
 );
 app.use(cors(corsOptions)); // 要在 API 的上面先使用
 app.use(history()); //單頁面應用的History路由模式
-app.use(express.json()); //透過req.body正確取得POST帶過來的參數
+app.use(express.json()); //把資料轉成JSON Object
 app.use(express.static(`${__dirname}/dist`)); //靜態檔案
 
 // route

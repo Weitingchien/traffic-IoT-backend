@@ -2,7 +2,6 @@ const dotenv = require('dotenv');
 const io = require('socket.io');
 const createError = require('http-errors');
 const { Board, Leds, Sensor } = require('johnny-five');
-//const webduino = require('webduino-js');
 
 dotenv.config({ path: `config.env` });
 const app = require('./app');

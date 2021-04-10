@@ -4,10 +4,17 @@ const firebaseDB = require('../service/firebase_adminConnect');
 const fireAuth = firebase.auth();
 
 exports.check = function(req, res, next) {
-  if (req.session.uid) {
+  if (req.session.uid === process.env.admin_UID) {
     res.status(200).json({
       status: 'success',
-      success: true
+      success: true,
+      role: 'admin'
+    });
+  } else if (req.session.uid !== process.env.admin_UID) {
+    res.status(200).json({
+      status: 'success',
+      success: true,
+      role: 'user'
     });
   }
 };
