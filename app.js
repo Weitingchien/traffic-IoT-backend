@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.get('/', function(req, res) {
-  res.sendFile(`${__dirname}/dist/index.html`);
+  res.sendFile(`${__dirname}/dist`);
 });
 
 // 加上 credentials 後，origin 必須設置網址，不能為 * (通用)
