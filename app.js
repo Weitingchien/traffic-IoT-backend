@@ -28,9 +28,9 @@ app.use(
   session({
     //session對使用這發號碼牌，並對其內容加密
     secret: 'keyboard cat', //加密
-    resave: true, // 是否要每次進入網頁時重新設置 seesion cookie，如果有設置失效，例如 5 分鐘，重新整理後又有 5 分鐘，但是必須要改成 ture 才有效，但是建議改成 tru
+    resave: false, // 是否要每次進入網頁時重新設置 seesion cookie，如果有設置失效，例如 5 分鐘，重新整理後又有 5 分鐘，但是必須要改成 ture 才有效，但是建議改成 tru
     saveUninitialized: true,
-    cookie: { maxAge: 600 * 1000 } //10分鐘後到期
+    cookie: { maxAge: 600 * 1 } //10分鐘後到期
   })
 );
 app.use(cors(corsOptions)); // 要在 API 的上面先使用

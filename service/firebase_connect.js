@@ -1,14 +1,14 @@
 const firebase = require('firebase');
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyCzZUIvwbU6DEFHCxmUuE3dRYMEutbt53s',
-  authDomain: 'test01-4f7aa.firebaseapp.com',
-  databaseURL: 'https://test01-4f7aa-default-rtdb.firebaseio.com',
-  projectId: 'test01-4f7aa',
-  storageBucket: 'test01-4f7aa.appspot.com',
-  messagingSenderId: '855113425564',
-  appId: '1:855113425564:web:46476dd1b87ce71c4a8359',
-  measurementId: 'G-4K1EBM3F8E'
+  apiKey: process.env.FIREBASE_APIKEY,
+  authDomain: process.env.FIREBASE_AUTHDOMAIN,
+  databaseURL: process.env.FIREBASE_DATABASEURL,
+  projectId: process.env.FIREBASE_PROJECTID,
+  storageBucket: process.env.FIREBASE_STORAGEBUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGINGSENDERID,
+  appId: process.env.FIREBASE_APPID,
+  measurementId: process.env.FIREBASE_MEASUREMENTID
 };
 
 // Initialize Firebase

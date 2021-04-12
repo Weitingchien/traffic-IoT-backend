@@ -16,6 +16,11 @@ exports.check = function(req, res, next) {
       success: true,
       role: 'user'
     });
+  } else {
+    res.status(401).json({
+      status: 'error',
+      success: false
+    });
   }
 };
 
