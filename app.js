@@ -20,7 +20,8 @@ app.get('/', function(req, res) {
 // 加上 credentials 後，origin 必須設置網址，不能為 * (通用)
 const corsOptions = {
   //因為非同源，所以前後端都必須要加上CORS的Credentials:true
-  origin: `http://localhost:3000` || `${process.env.SocketIO}`, // 客戶端 port
+  //更改前 origin: `http://localhost:3000` || `${process.env.SocketIO}`, // 客戶端 port
+  origin: `${process.env.SocketIO}` || `http://localhost:3000`,
   credentials: true
 };
 
