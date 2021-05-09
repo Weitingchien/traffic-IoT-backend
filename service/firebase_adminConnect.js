@@ -1,6 +1,5 @@
-const admin = require('firebase-admin'); //載入資料庫模組，以使用Firebase服務帳戶多項功能
+const admin = require('firebase-admin'); //主要功能有:管理員權限讀寫即時資料庫、進行身分驗證
 
-//初始化，(連接Firebase帳戶與資料庫)
 admin.initializeApp({
   credential: admin.credential.cert({
     type: process.env.FIREBASE_TYPE,
@@ -18,6 +17,6 @@ admin.initializeApp({
   databaseURL: `${process.env.databaseURL}`
 });
 
-const dataBase = admin.database();
+const dataBase = admin.database(); //獲取Database服務
 
 module.exports = dataBase;

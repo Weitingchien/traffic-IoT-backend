@@ -1,14 +1,13 @@
 const dotenv = require('dotenv');
 const io = require('socket.io');
-const createError = require('http-errors');
 const { Board, Leds, Sensor } = require('johnny-five');
 
 dotenv.config({ path: `config.env` });
 const app = require('./app');
 
-const port = process.env.PORT || '3000';
+const port = '3000' || process.env.PORT;
 
-const server = app.listen(port, function() {
+const server = app.listen(port, () => {
   console.log('connected!');
 });
 const sio = io(server);
@@ -17,8 +16,8 @@ const board = new Board({
 });
 
 // johnny-five event when johnny init ready
-board.on('ready', function() {
-  sio.on('connection', function(socket) {
+board.on('ready', () => {
+  sio.on('connection', socket => {
     let ledTimer;
     let numberOfCars = 0;
     const leds = new Leds([4, 3, 2, 7, 6, 5]); // 指定LED output 為 Arduino 第4,3,2,7,6,5腳
@@ -33,14 +32,12 @@ board.on('ready', function() {
     });
     fsrA.on('change', () => {
       let time;
-      // 值addTrafficSignalLightsSeconds為1代表有車子通過
+      // 如果fsrA.value為1代表有車子通過
       if (fsrA.value === 1) {
         numberOfCars += 1;
-        //fsrA.addTrafficSignalLightsSeconds = 1;
         if (numberOfCars >= 1 && numberOfCars <= 3) {
           fsrA.addTrafficSignalLightsSeconds = 1; //1輛且小於等於3輛車子通過值就為1
           socket.emit('ForceSensitiveResistorEvent', numberOfCars);
-          console.log(fsrA.addTrafficSignalLightsSeconds);
         } else if (numberOfCars > 4) {
           fsrA.addTrafficSignalLightsSeconds = 2; //有4輛以上車子通過值就為2
           socket.emit('ForceSensitiveResistorEvent', numberOfCars);
@@ -56,14 +53,11 @@ board.on('ready', function() {
     });
     fsrB.on('change', () => {
       let time;
-      // 值addTrafficSignalLightsSeconds為1代表有車子通過
       if (fsrB.value === 1) {
         numberOfCars += 1;
-        //fsrB.addTrafficSignalLightsSeconds = 1;
         if (numberOfCars >= 1 && numberOfCars <= 3) {
           fsrB.addTrafficSignalLightsSeconds = 1;
           socket.emit('ForceSensitiveResistorEvent', numberOfCars);
-          console.log(fsrB.addTrafficSignalLightsSeconds);
         } else if (numberOfCars >= 4) {
           fsrB.addTrafficSignalLightsSeconds = 2;
           socket.emit('ForceSensitiveResistorEvent', numberOfCars);
@@ -76,14 +70,29 @@ board.on('ready', function() {
         }, 90000);
       }
     });
-
-    // socket連線成功時，開始監聽前端的 ledOffEvent、ledOnEvent 事件
-    //sio.on('connection', function(socket) {
-    socket.on('ledOffEvent', function() {
+    // 接收前端發送的 ledOffEvent、ledOnEvent 事件
+    socket.on('ledOffEvent', () => {
       leds.off();
       clearTimeout(ledTimer); //清除計時器(沒有清除的話他會只關閉完當下那顆亮的LED之後又繼續執行)
     });
-    socket.on('ledOnEvent', function() {
+    socket.on('ledOnEvent', () => {
+      function ledAsync(a, b, duration) {
+        return new Promise(resolve => {
+          ledTimer = setTimeout(() => {
+            leds[a].off();
+            leds[b].off();
+            resolve(`成功關閉${a}和${b}交通號誌燈`); //成功關閉當下的交通號誌燈時，回傳resolve()才會繼續往下一個await setPin()執行
+          }, duration);
+        });
+      }
+      async function setPin(a, b, duration) {
+        //當函式前面寫上async，裡面就可以使用await的同步語法
+        leds[a].on();
+        leds[b].on();
+        await ledAsync(a, b, duration).then(success => {
+          console.log(success);
+        });
+      }
       async function ledLoopOn() {
         //async搭配await(ES7語法=>不支援IE瀏覽器)
         while (true) {
@@ -112,40 +121,6 @@ board.on('ready', function() {
         }
       }
       ledLoopOn();
-      function ledAsync(a, b, duration) {
-        return new Promise(res => {
-          //Promise(ES6語法)
-          ledTimer = setTimeout(() => {
-            console.log(a, b);
-            console.log(duration);
-            leds[a].off();
-            leds[b].off();
-            res(`${a}亮、${b}亮`); //await有接收到resolve()才會繼續往下一個await setPin()執行
-          }, duration);
-        });
-      }
-      async function setPin(a, b, duration) {
-        //當函式前面寫上async，裡面就可以使用await的同步語法
-        leds[a].on();
-        leds[b].on();
-        await ledAsync(a, b, duration);
-      }
     });
   });
-});
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
-});
-
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
 });

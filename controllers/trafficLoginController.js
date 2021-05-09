@@ -1,9 +1,9 @@
-const firebase = require('../service/firebase_connect'); //載入認證模組
+const firebase = require('../service/firebase_connect');
 const firebaseDB = require('../service/firebase_adminConnect');
-//載入資料庫模組
-const fireAuth = firebase.auth();
 
-exports.check = function(req, res, next) {
+const fireAuth = firebase.auth(); // auth提供一些驗證的方法
+
+exports.check = (req, res) => {
   if (req.session.uid === process.env.admin_UID) {
     res.status(200).json({
       status: 'success',
@@ -24,7 +24,7 @@ exports.check = function(req, res, next) {
   }
 };
 
-exports.login = function(req, res) {
+exports.login = (req, res) => {
   const { email, pwd } = req.body;
   fireAuth
     .signInWithEmailAndPassword(email, pwd)
@@ -59,12 +59,8 @@ exports.signup = (req, res) => {
         status: 'success',
         success: true
       });
-      res.redirect('/Login');
     })
     .catch(err => {
       console.log(err);
-      //req.flash('error', err.message);
-      //res.renderVue('Signup.vue', { error: req.flash('error') } );
-      //res.redirect('/Signup');
     });
 };
